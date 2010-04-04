@@ -801,12 +801,20 @@ module RightAws
       #  sandy.reload                          #=> {"name"=>["Sandy"], "id"=>"b2832ce2-e461-11dc-b13c-001bfc466dd7", "toys"=>["kids"]}
       #
       # compare to +put+ method
-      def save
+      def save expected_attributes={ }
         @attributes = uniq_values(@attributes)
         prepare_for_update
-        connection.put_attributes(domain, id, @attributes, :replace)
+        connection.put_attributes(domain, id, @attributes, :replace, expected_attributes)
         mark_as_old
         @attributes
+      end
+
+      def save_if expected_attributes={ }
+        begin
+          save expected_attributes
+        rescue RightAws::AwsError => e
+          false
+        end
       end
 
       # Replaces the attributes at SDB by the given values.
@@ -815,7 +823,7 @@ module RightAws
       # Returns a hash of stored attributes.
       #
       # see +save+ method
-      def save_attributes(attrs)
+      def save_attributes(attrs, expected_attributes={})
         prepare_for_update
         attrs = uniq_values(attrs)
         # if 'id' is present in attrs hash then replace internal 'id' attribute
@@ -824,7 +832,7 @@ module RightAws
         else
           attrs['id'] = id
         end
-        connection.put_attributes(domain, id, attrs, :replace) unless attrs.blank?
+        connection.put_attributes(domain, id, attrs, :replace, expected_attributes) unless attrs.blank?
         attrs.each { |attribute, values| attrs[attribute] = values }
         mark_as_old
         attrs

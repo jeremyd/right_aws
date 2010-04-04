@@ -99,6 +99,7 @@ module RightAws
           result["Attribute.#{idx}.Replace"] = 'true' if replace
 
           # set expected attribute
+          expected_attributes = expected_attributes.to_mash
           if expected_attributes.include?(attribute)
             result["Expected.#{idx}.Name"] = attribute
             if expected_attributes[attribute].nil?
@@ -308,13 +309,18 @@ module RightAws
     # see: http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/SDB_API_PutAttributes.html
     #
     def put_attributes(domain_name, item_name, attributes, replace = false, expected_attributes = {})
-      params = {
-        'DomainName' => domain_name, 'ItemName'   => item_name
+      begin
+        params = {
+          'DomainName' => domain_name, 'ItemName'   => item_name
         }.merge(pack_attributes(attributes, replace, expected_attributes))
-      link = generate_request("PutAttributes", params)
-      request_info( link, QSdbSimpleParser.new )
-    rescue Exception
-      on_exception
+        link = generate_request("PutAttributes", params)
+        request_info( link, QSdbSimpleParser.new )
+      rescue RightAws::AwsError => e
+        # Don't sever the connection on a conditional put failure.
+        (e.to_s =~ /ConditionalCheckFailed:/) ? raise : on_exception()
+      rescue Exception
+        on_exception
+      end
     end
 
     # Retrieve SDB item's attribute(s).
