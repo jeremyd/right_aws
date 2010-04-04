@@ -96,9 +96,7 @@ module RightAws
         skip_values = attributes.is_a?(Array)
         attributes.each do |attribute, values|
           # set replacement attribute
-          if replace == true or (replace.kind_of?(Enumerable) and replace.include?(attribute))
-            result["Attribute.#{idx}.Replace"] = 'true'
-          end
+          result["Attribute.#{idx}.Replace"] = 'true' if replace
 
           # set expected attribute
           if expected_attributes.include?(attribute)
